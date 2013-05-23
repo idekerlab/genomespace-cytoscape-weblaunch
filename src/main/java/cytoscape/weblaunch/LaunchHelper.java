@@ -136,7 +136,7 @@ public class LaunchHelper {
 		FileOutputStream fos = null; 
 		try {
 			URL url = new URL(u);
-			f=  new File("/Users/thully/CytoscapeConfiguration/3/apps/installed/plugin.jar");
+			f = File.createTempFile("plugin",".jar");
 			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
 			fos = new FileOutputStream(f);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 24);
@@ -197,7 +197,7 @@ public class LaunchHelper {
 
 	private static File getPropsFile() {
 		File f = new File( System.getProperty("user.home") + System.getProperty("file.separator") + 
-		                   ".cytoscape" +  System.getProperty("file.separator") + "genomespace-cytoscape.props" );
+		                   "CytoscapeConfiguration" +  System.getProperty("file.separator") + "genomespace-cytoscape.props" );
 		return f;
 	}
 
