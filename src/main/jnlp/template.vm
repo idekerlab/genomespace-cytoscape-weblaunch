@@ -1,4 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?php
+	error_reporting(E_ALL ^ E_NOTICE); 
+    header('Content-type: application/x-java-jnlp-file');
+    header('Content-Disposition: attachment; filename="cytoscape.jnlp"');
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT"); // Date in the past
+    header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+    header("Cache-Control: no-store, no-cache, must-revalidate");
+    header("Cache-control: post-check=0, pre-check=0, false");
+    header("Pragma: no-cache");
+    header("Content-Type: application/x-java-jnlp-file");
+    $MAXHEAP=htmlspecialchars($_GET['maxHeapSize']);
+    $NETWORK=htmlspecialchars($_GET['network']);
+    $SESSION=htmlspecialchars($_GET['session']);
+    $GSENV=htmlspecialchars($_GET['gsenv']);
+    $NODETABLE=htmlspecialchars($_GET['nodeTable']);
+    $EDGETABLE=htmlspecialchars($_GET['edgeTable']);
+	print('<?xml version="1.0" encoding="utf-8"?>');
+?>
 <jnlp codebase="$project.Url" href="$outputFile">
   <information>
     <title>Cytoscape</title>
@@ -9,11 +26,49 @@
   <security>
      <all-permissions/>
   </security>
+  <update check="always" policy="always"/>
   <resources>
-    <j2se version="$j2seVersion"/>
+    <j2se version="$j2seVersion" 
+	      java-vm-args="-Dsun.lang.ClassLoader.allowArraySyntax=true"
+<?php 
+   if($MAXHEAP == null || $MAXHEAP == "") {
+     $MAXHEAP="1024M";
+   } 
+   print('		max-heap-size="');
+   print($MAXHEAP);
+   print('"/>');
+?>
      $dependencies
   </resources>
   <application-desc main-class="$mainClass">
+<?php
+	# either load a session
+    if($SESSION != null && $SESSION != "") {
+        print("	<argument>-P</argument>\n");
+        print("	<argument>gs.session=$SESSION</argument>\n");
+
+	# or load network and/or attributes
+    } else {
+		if ($NETWORK != null && $NETWORK != "") {
+        	print("	<argument>-P</argument>\n");
+        	print("	<argument>gs.network=$NETWORK</argument>\n");
+		}
+		if ($NODETABLE != null && $NODETABLE != "") {
+        	print("	<argument>-P</argument>\n");
+        	print("	<argument>node.cytable=$NODETABLE</argument>\n");
+		}
+		if ($EDGETABLE != null && $EDGETABLE != "") {
+        	print("	<argument>-P</argument>\n");
+        	print("	<argument>edge.cytable=$EDGETABLE</argument>\n");
+		}
+    }
+
+	# set the genomespace environment
+	if ($GSENV != null && $GSENV != "") {
+       	print("	<argument>-P</argument>\n");
+       	print("	<argument>genomespace.environment=$GSENV</argument>\n");
+	}
+?>
   </application-desc>
 </jnlp>
 
