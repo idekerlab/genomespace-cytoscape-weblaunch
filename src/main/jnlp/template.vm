@@ -16,7 +16,7 @@
     $EDGETABLE=htmlspecialchars($_GET['edgeTable']);
 	print('<?xml version="1.0" encoding="utf-8"?>');
 ?>
-<jnlp codebase="$project.Url" href="$outputFile">
+<jnlp codebase="$project.Url">
   <information>
     <title>Cytoscape</title>
     <vendor>Cytoscape Consortium</vendor>

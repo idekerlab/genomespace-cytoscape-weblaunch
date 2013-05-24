@@ -2,25 +2,24 @@ package cytoscape.weblaunch;
 
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import javax.swing.JOptionPane;
-import javax.swing.JFileChooser;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.Channels;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.util.List;
-import java.util.ArrayList;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Properties;
+
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 
 public class LaunchHelper {
 
 	private static String[] versions = new String[] {"Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
 
 	private static String[] pluginUrls = new String[] { 
-			"http://127.0.0.1/~thully/genomespace-plugin.jar" // GenomeSpace
+			"http://chianti.ucsd.edu/~thully/plugins/genomespace-cytoscape-2.0-SNAPSHOT.jar" // GenomeSpace
 		};
 
 	private static String installerURL = "http://www.cytoscape.org/download.html";
@@ -30,7 +29,6 @@ public class LaunchHelper {
 	private static final String PREFERRED_PATH = "preferred.path";
 
 	public static void main(String[] args) {
-
 		String os = System.getProperty("os.name").toLowerCase();
 
 		String exe = getExecutable(os);
@@ -42,8 +40,8 @@ public class LaunchHelper {
 
 		// OK, all systems go!
 
-		String[] plugins = downloadPlugins();
-		String[] command = createCommand(getFile(path,exe),plugins, args);
+		downloadPlugins();
+		String[] command = createCommand(getFile(path,exe),args);
 
 		storePreferredPath(path);
 
@@ -103,32 +101,22 @@ public class LaunchHelper {
 		return path;
 	}
 
-	private static String[] createCommand(final File f, final String[] plugins, final String[] args) {
-		String[] command = new String[ (plugins.length * 2) + args.length + 1];
+	private static String[] createCommand(final File f, final String[] args) {
+		String[] command = new String[ args.length + 1];
 		int i = 0;
 		command[i] = f.getAbsolutePath();
-		for ( String plugin : plugins ) {
-			command[++i] = "-b";
-			command[++i] = plugin;
-		}
 		for( String arg : args) {
 			command[++i] = arg;
 		}
 		return command;
 	}
 
-	private static String[] downloadPlugins() {
-
-		List<String> filePaths = new ArrayList<String>(); 
+	private static void downloadPlugins() {
 		for (String url : pluginUrls) { 
 			File f = downloadURL(url);
-			if ( f != null )
-				filePaths.add( f.getAbsolutePath() );
-			else
+			if(f == null)
 				System.err.println("Couldn't download plugin URL: " + url);
 		}
-
-		return filePaths.toArray(new String[filePaths.size()]);
 	}
 
 	private static File downloadURL(final String u) {
@@ -136,7 +124,11 @@ public class LaunchHelper {
 		FileOutputStream fos = null; 
 		try {
 			URL url = new URL(u);
-			f = File.createTempFile("plugin",".jar");
+			String name = url.getPath().substring(url.getPath().lastIndexOf("/"));
+			String home = System.getProperty("user.home");
+			String sep = System.getProperty("file.separator");
+			f = new File(home + sep + "CytoscapeConfiguration" + sep +
+					"3" + sep + "apps" + sep + "installed" + sep + name );
 			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
 			fos = new FileOutputStream(f);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 24);
