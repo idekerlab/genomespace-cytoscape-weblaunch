@@ -11,6 +11,8 @@ import java.util.Properties;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 public class LaunchHelper {
 
@@ -29,6 +31,12 @@ public class LaunchHelper {
 	private static final String PREFERRED_PATH = "preferred.path";
 
 	public static void main(String[] args) {
+		try {
+		    UIManager.setLookAndFeel(
+		        UIManager.getSystemLookAndFeelClassName());
+		}
+		catch(Exception e) {}
+		
 		String os = System.getProperty("os.name").toLowerCase();
 		String arch = System.getProperty("os.arch");
 		String exe = getExecutable(os);
