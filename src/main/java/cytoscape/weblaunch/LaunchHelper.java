@@ -39,29 +39,30 @@ public class LaunchHelper {
 			return;
 
 		// OK, all systems go!
-
+		File file = getFile(path,exe);
 		downloadApps();
-		String[] command = createCommand(getFile(path,exe),args);
+		String[] command = createCommand(file,args,os);
 
 		storePreferredPath(path);
 
-		launch(command);
+		launch(command, file.getParentFile());
 	}
 
-	private static void launch(final String[] command) {
+	private static Process launch(final String[] command, final File path) {
 		try {
 			Runtime rt = Runtime.getRuntime();
-			Process p = rt.exec(command);
+			Process p = rt.exec(command, null, path);
 			StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream(), "ERROR");
 			StreamGobbler outputGobbler = new StreamGobbler(p.getInputStream(), "OUTPUT");
 			errorGobbler.start();
 			outputGobbler.start();
-			int exitVal = p.waitFor();
+			return p;
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
 							  "Error launching: " + command[0] + "\n\nCaused by\n" + e.getMessage(),
-							  "Could Not Launch Cytoscape",
+							  "Error",
 							  JOptionPane.ERROR_MESSAGE);
+			return null;
 		}
 	}
 
@@ -79,12 +80,7 @@ public class LaunchHelper {
 		if ( !executableExists(path,exe) ) {
 			int res = JOptionPane.showConfirmDialog(null, "Is Cytoscape installed on this computer?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
 
-			if ( res == JOptionPane.YES_OPTION ) {
-				JOptionPane.showMessageDialog(null, "Please choose the directory where\nCytoscape is installed on your system.", "Select Cytoscape Installation Directory", JOptionPane.INFORMATION_MESSAGE);	
-				File file = selectCytoscapeInstallationDirectory();
-				if ( file != null )
-					path = file.getAbsolutePath();
-			} else {
+			if(res == JOptionPane.NO_OPTION) {
 				res = JOptionPane.showConfirmDialog(null, "Do you want to install Cytoscape on this computer?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);	
 				if(res == JOptionPane.YES_OPTION) {
 					installCytoscape(os, arch);
@@ -92,6 +88,13 @@ public class LaunchHelper {
 				else
 					return null;
 			}
+			
+			if ( !executableExists(path,exe) ) {
+				JOptionPane.showMessageDialog(null, "Please choose the directory where\nCytoscape is installed on your system.", "Select Cytoscape Installation Directory", JOptionPane.INFORMATION_MESSAGE);	
+				File file = selectCytoscapeInstallationDirectory();
+				if ( file != null )
+					path = file.getAbsolutePath();
+			} 
 		}
 
 		while ( !executableExists(path,exe) ) {
@@ -109,10 +112,18 @@ public class LaunchHelper {
 		return path;
 	}
 
-	private static String[] createCommand(final File f, final String[] args) {
-		String[] command = new String[ args.length + 1];
-		int i = 0;
-		command[i] = f.getAbsolutePath();
+	private static String[] createCommand(final File f, final String[] args, final String os) {
+		int i = -1;
+		String[] command;
+		if(os.startsWith(WINDOWS)) {
+			command = new String[ args.length + 3];
+			command[++i] = "cmd.exe";
+			command[++i] = "/c";
+		}
+		else {
+			command = new String[ args.length + 1];
+		}
+		command[++i] = f.getAbsolutePath();
 		for( String arg : args) {
 			command[++i] = arg;
 		}
@@ -122,9 +133,8 @@ public class LaunchHelper {
 	private static void downloadApps() {
 		for (String url : appUrls) { 
 			String home = System.getProperty("user.home");
-			String sep = System.getProperty("file.separator");
-			String path = home + sep + "CytoscapeConfiguration" + sep +
-					"3" + sep + "apps" + sep + "installed" + sep;
+			String path = home + File.separator + "CytoscapeConfiguration" + File.separator +
+					"3" + File.separator + "apps" + File.separator + "installed" + File.separator;
 			File f = downloadURL(url, path);
 			if(f == null)
 				System.err.println("Couldn't download plugin URL: " + url);
@@ -176,7 +186,7 @@ public class LaunchHelper {
 	}
 
 	private static File getFile(final String path, final String exe) {
-		return new File(path + System.getProperty("file.separator") + exe);
+		return new File(path + File.separator + exe);
 	}
 
 	private static String getExecutable(final String os) {
@@ -193,16 +203,16 @@ public class LaunchHelper {
 		String path = getPreferredPath();
 		if ( path != null )
 			return path;
-		if(os.equals(WINDOWS))
-			path = "C:\\Program Files";
-		else if(os.equals(MAC))  
-			path = "/Applications";
+		if(os.startsWith(WINDOWS))
+			path = "C:" + File.separator + "Program Files";
+		else if(os.startsWith(MAC))  
+			path = File.separator + "Applications";
 		else						
 			path = System.getProperty("user.home");
 
 		// allow older versions of cytoscape 
 		for ( String version : versions ) {	
-			String npath = path + "/" + version;
+			String npath = path + File.separator + version;
 			if ( executableExists(npath,exe) ) {
 				path = npath;
 				break;	
@@ -213,8 +223,8 @@ public class LaunchHelper {
 	}
 
 	private static File getPropsFile() {
-		File f = new File( System.getProperty("user.home") + System.getProperty("file.separator") + 
-		                   "CytoscapeConfiguration" +  System.getProperty("file.separator") + "genomespace-cytoscape.props" );
+		File f = new File( System.getProperty("user.home") + File.separator + 
+		                   "CytoscapeConfiguration" +  File.separator + "genomespace-cytoscape.props" );
 		return f;
 	}
 
@@ -247,7 +257,7 @@ public class LaunchHelper {
 	}
 	
 	private static void installCytoscape(final String os, final String arch) {
-		String installerURL;
+		String installerURL = "";
 		if(os.startsWith(WINDOWS)) {
 			if(arch.contains("64")) 
 				installerURL = win64InstallerURL;
@@ -258,7 +268,10 @@ public class LaunchHelper {
 			installerURL = unixInstallerURL;
 		File installer = downloadURL(installerURL);
 		installer.setExecutable(true);
-		String[] command = createCommand(installer, new String[0]);
-		launch(command);
+		String[] command = createCommand(installer, new String[0], os);
+		try {
+			launch(command, installer.getParentFile()).waitFor();
+		}
+		catch(InterruptedException e){}
 	}
 }
