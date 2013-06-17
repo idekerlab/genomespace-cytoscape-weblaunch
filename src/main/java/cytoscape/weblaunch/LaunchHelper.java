@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Properties;
@@ -12,13 +13,12 @@ import java.util.Properties;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 public class LaunchHelper {
 
 	private static String[] versions = new String[] {"Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
 	private static String[] appUrls = new String[] { 
-			"http://chianti.ucsd.edu/~thully/plugins/genomespace-cytoscape-2.0-SNAPSHOT.jar" // GenomeSpace
+			"http://chianti.ucsd.edu/~thully/plugins/GenomeSpace.jar" // GenomeSpace
 		};
 
 	private static String win64InstallerURL = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_64bit.exe";
@@ -50,8 +50,8 @@ public class LaunchHelper {
 		File file = getFile(path,exe);
 		downloadApps();
 		String[] command = createCommand(file,args,os);
-
-		storePreferredPath(path);
+		if(path != bestGuessPath)
+			storePreferredPath(path);
 
 		launch(command, file.getParentFile());
 	}
@@ -86,12 +86,16 @@ public class LaunchHelper {
 		String path = inpath;
 
 		if ( !executableExists(path,exe) ) {
-			int res = JOptionPane.showConfirmDialog(null, "Is Cytoscape installed on this computer?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
+			int isInstalled = JOptionPane.showConfirmDialog(null, "Is Cytoscape installed on this computer?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
 
-			if(res == JOptionPane.NO_OPTION) {
-				res = JOptionPane.showConfirmDialog(null, "Do you want to install Cytoscape on this computer?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);	
-				if(res == JOptionPane.YES_OPTION) {
-					installCytoscape(os, arch);
+			if(isInstalled == JOptionPane.NO_OPTION) {
+				int install = JOptionPane.showConfirmDialog(null, "Do you want to install Cytoscape on this computer?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);	
+				if(install == JOptionPane.YES_OPTION) {
+					while(!installCytoscape(os, arch)) {
+						int retry = JOptionPane.showConfirmDialog(null, "Cytoscape installation did not complete successfully. Retry?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);
+						if(retry == JOptionPane.NO_OPTION)
+							return null;
+					}
 				}
 				else
 					return null;
@@ -171,7 +175,9 @@ public class LaunchHelper {
 					f = new File(f, name);
 				}
 			}
-			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+			URLConnection uc = url.openConnection();
+			if(uc.getLastModified() <= f.lastModified()) return f;
+			ReadableByteChannel rbc = Channels.newChannel(uc.getInputStream());
 			fos = new FileOutputStream(f);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 30);
 			fos.close();
@@ -208,9 +214,7 @@ public class LaunchHelper {
 	}
 
 	private static String getBestGuessPath(final String os, final String exe) {
-		String path = getPreferredPath();
-		if ( path != null )
-			return path;
+		String path = null;
 		if(os.startsWith(WINDOWS))
 			path = "C:" + File.separator + "Program Files";
 		else if(os.startsWith(MAC))  
@@ -226,6 +230,8 @@ public class LaunchHelper {
 				break;	
 			} 
 		}
+		if(path == null)
+			path=getPreferredPath();
 				
 		return path;
 	}
@@ -264,7 +270,7 @@ public class LaunchHelper {
 			return null;
 	}
 	
-	private static void installCytoscape(final String os, final String arch) {
+	private static boolean installCytoscape(final String os, final String arch) {
 		String installerURL = "";
 		if(os.startsWith(WINDOWS)) {
 			if(arch.contains("64")) 
@@ -275,11 +281,16 @@ public class LaunchHelper {
 		else
 			installerURL = unixInstallerURL;
 		File installer = downloadURL(installerURL);
+		if(installer == null)
+			return false;
 		installer.setExecutable(true);
 		String[] command = createCommand(installer, new String[0], os);
 		try {
 			launch(command, installer.getParentFile()).waitFor();
 		}
-		catch(InterruptedException e){}
+		catch(InterruptedException e){
+			return false;
+		}
+		return true;
 	}
 }
