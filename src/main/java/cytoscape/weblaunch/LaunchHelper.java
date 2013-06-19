@@ -21,10 +21,10 @@ public class LaunchHelper {
 			"http://chianti.ucsd.edu/~thully/plugins/GenomeSpace.jar" // GenomeSpace
 		};
 
-	private static String win64InstallerURL = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_64bit.exe";
-	private static String win32InstallerURL = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_32bit.exe";
-	private static String unixInstallerURL = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_unix.sh";
-	private static String macInstallerURL = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_macos.dmg";
+	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_64bit.exe";
+	private static String win32InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_32bit.exe";
+	private static String unixInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_unix.sh";
+	private static String macInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_macos.dmg";
 
 	private static final String MAC = "mac os x";
 	private static final String WINDOWS = "windows";
@@ -40,8 +40,7 @@ public class LaunchHelper {
 		String os = System.getProperty("os.name").toLowerCase();
 		String arch = System.getProperty("os.arch");
 		String exe = getExecutable(os);
-		String bestGuessPath = getBestGuessPath(os,exe);
-		String path = checkForCytoscapeInstallation(bestGuessPath, os, arch, exe); 
+		String path = checkForCytoscapeInstallation(os, arch, exe); 
 
 		if ( path == null )
 			return;
@@ -50,9 +49,6 @@ public class LaunchHelper {
 		File file = getFile(path,exe);
 		downloadApps();
 		String[] command = createCommand(file,args,os);
-		if(path != bestGuessPath)
-			storePreferredPath(path);
-
 		launch(command, file.getParentFile());
 	}
 
@@ -82,45 +78,52 @@ public class LaunchHelper {
 		} catch (IOException ioe) { ioe.printStackTrace(System.err); }
 	}
 
-	private static String checkForCytoscapeInstallation(final String inpath, final String os, final String arch, final String exe) {
-		String path = inpath;
+	private static String checkForCytoscapeInstallation(final String os, final String arch, final String exe) {
+		String path = getCytoscapeInstallationPath(os, exe);
+		if (path != null)
+			return path;
+		
+		int isInstalled = JOptionPane.showConfirmDialog(null, "Is Cytoscape installed on this computer?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
 
-		if ( !executableExists(path,exe) ) {
-			int isInstalled = JOptionPane.showConfirmDialog(null, "Is Cytoscape installed on this computer?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
-
-			if(isInstalled == JOptionPane.NO_OPTION) {
-				int install = JOptionPane.showConfirmDialog(null, "Do you want to install Cytoscape on this computer?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);	
-				if(install == JOptionPane.YES_OPTION) {
-					while(!installCytoscape(os, arch)) {
-						int retry = JOptionPane.showConfirmDialog(null, "Cytoscape installation did not complete successfully. Retry?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);
-						if(retry == JOptionPane.NO_OPTION)
-							return null;
-					}
+		if(isInstalled == JOptionPane.NO_OPTION) {
+			int install = JOptionPane.showConfirmDialog(null, "Do you want to install Cytoscape on this computer?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);	
+			if(install == JOptionPane.YES_OPTION) {
+				while(!installCytoscape(os, arch)) {
+					int retry = JOptionPane.showConfirmDialog(null, "Cytoscape installation did not complete successfully. Retry?", "Install Cytoscape", JOptionPane.YES_NO_OPTION);
+					if(retry != JOptionPane.YES_OPTION)
+						return null;
 				}
-				else
-					return null;
+				path = getCytoscapeInstallationPath(os, exe);
+				if (path != null)
+					return path;
 			}
-			
-			if ( !executableExists(path,exe) ) {
-				JOptionPane.showMessageDialog(null, "Please choose the directory where\nCytoscape is installed on your system.", "Select Cytoscape Installation Directory", JOptionPane.INFORMATION_MESSAGE);	
-				File file = selectCytoscapeInstallationDirectory();
-				if ( file != null )
-					path = file.getAbsolutePath();
-			} 
+			else
+				return null;
 		}
+		else if(isInstalled == JOptionPane.CLOSED_OPTION)
+			return null;
+
+		JOptionPane.showMessageDialog(null, "Please choose the directory where\nCytoscape is installed on your system.", "Select Cytoscape Installation Directory", JOptionPane.INFORMATION_MESSAGE);	
+		File file = selectCytoscapeInstallationDirectory();
+		if ( file != null )
+			path = file.getAbsolutePath();
+		else
+			return null;
 
 		while ( !executableExists(path,exe) ) {
 			int res = JOptionPane.showConfirmDialog(null, "We can't find the Cytoscape executable in the specified location.\nWould you like to try another location?", "Select Cytoscape Installation Directory", JOptionPane.YES_NO_OPTION);	
 
 			if ( res == JOptionPane.YES_OPTION ) {
-				File file = selectCytoscapeInstallationDirectory();
+				file = selectCytoscapeInstallationDirectory();
 				if ( file != null )
 					path = file.getAbsolutePath();
+				else
+					return null;
 			} else {
 				return null;
 			}
 		}
-
+		storePreferredPath(path);
 		return path;
 	}
 
@@ -143,53 +146,42 @@ public class LaunchHelper {
 	}
 
 	private static void downloadApps() {
-		for (String url : appUrls) { 
-			String home = System.getProperty("user.home");
-			String path = home + File.separator + "CytoscapeConfiguration" + File.separator +
-					"3" + File.separator + "apps" + File.separator + "installed" + File.separator;
-			File f = downloadURL(url, path);
-			if(f == null)
-				System.err.println("Couldn't download plugin URL: " + url);
+		String home = System.getProperty("user.home");
+		String path = home + File.separator + "CytoscapeConfiguration" + File.separator +
+				"3" + File.separator + "apps" + File.separator + "installed" + File.separator;
+		for (String appUrl : appUrls) { 
+			String name = appUrl.substring(appUrl.lastIndexOf("/")+1);
+			try {
+				URL urlRef = new URL(appUrl);
+				URLConnection uc = urlRef.openConnection();
+				File appFile = new File(path + name);
+				if(!appFile.exists() || (uc.getLastModified() > appFile.lastModified())) {
+					if(!downloadURL(urlRef, appFile))
+						System.err.println("Couldn't download plugin URL: " + urlRef);
+					}
+				}
+			catch(Exception e) {
+				e.printStackTrace(System.err);
+			}
 		}
 	}
 	
-	private static File downloadURL(final String u) {
-		return downloadURL(u, null);
-	}
-	
-	private static File downloadURL(final String u, final String path) {
-		File f = null;
+	private static boolean downloadURL(final URL url, final File file) {
 		FileOutputStream fos = null; 
 		try {
-			URL url = new URL(u);
-			String name = url.getPath().substring(url.getPath().lastIndexOf("/")+1);
-			if(path == null){ 
-				int dotIndex = name.lastIndexOf(".");
-				String prefix = name.substring(0, dotIndex);
-				String suffix = name.substring(dotIndex);
-				f=File.createTempFile(prefix,suffix);
-			}
-			else{
-				f=new File(path);
-				if(f.isDirectory()) {
-					f = new File(f, name);
-				}
-			}
-			URLConnection uc = url.openConnection();
-			if(uc.getLastModified() <= f.lastModified()) return f;
-			ReadableByteChannel rbc = Channels.newChannel(uc.getInputStream());
-			fos = new FileOutputStream(f);
+			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+			fos = new FileOutputStream(file);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 30);
 			fos.close();
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
+			return false;
 		} finally {
 			if ( fos != null ) {
 				try { fos.close(); } catch (IOException ioe) { ioe.printStackTrace(System.err); }
-				fos = null;
 			}
 		}
-		return f;
+		return true;
 	}
 
 	private static boolean executableExists(final String path, final String exe) {
@@ -213,27 +205,27 @@ public class LaunchHelper {
 		return exe;
 	}
 
-	private static String getBestGuessPath(final String os, final String exe) {
-		String path = null;
+	private static String getCytoscapeInstallationPath(final String os, final String exe) {
+		String basePath = null;
 		if(os.startsWith(WINDOWS))
-			path = "C:" + File.separator + "Program Files";
+			basePath = "C:" + File.separator + "Program Files";
 		else if(os.startsWith(MAC))  
-			path = File.separator + "Applications";
+			basePath = File.separator + "Applications";
 		else						
-			path = System.getProperty("user.home");
-
-		// allow older versions of cytoscape 
+			basePath = System.getProperty("user.home");
+		
 		for ( String version : versions ) {	
-			String npath = path + File.separator + version;
-			if ( executableExists(npath,exe) ) {
-				path = npath;
-				break;	
+			String path = basePath + File.separator + version;
+			if ( executableExists(path,exe) ) {
+				return path;	
 			} 
 		}
-		if(path == null)
-			path=getPreferredPath();
-				
-		return path;
+		
+		String path=getPreferredPath();
+		if(executableExists(path,exe))
+			return path;
+		else
+			return null;
 	}
 
 	private static File getPropsFile() {
@@ -271,26 +263,35 @@ public class LaunchHelper {
 	}
 	
 	private static boolean installCytoscape(final String os, final String arch) {
-		String installerURL = "";
+		String installerUrl = "";
 		if(os.startsWith(WINDOWS)) {
 			if(arch.contains("64")) 
-				installerURL = win64InstallerURL;
+				installerUrl = win64InstallerUrl;
 			else
-				installerURL = win32InstallerURL;
+				installerUrl = win32InstallerUrl;
 		}
 		else
-			installerURL = unixInstallerURL;
-		File installer = downloadURL(installerURL);
-		if(installer == null)
-			return false;
-		installer.setExecutable(true);
-		String[] command = createCommand(installer, new String[0], os);
+			installerUrl = unixInstallerUrl;
+		String name = installerUrl.substring(installerUrl.lastIndexOf("/")+1);
+		int dotIndex = name.lastIndexOf(".");
+		String prefix = name.substring(0, dotIndex);
+		String suffix = name.substring(dotIndex);
 		try {
-			launch(command, installer.getParentFile()).waitFor();
+			File installerFile = File.createTempFile(prefix,suffix);
+			URL urlRef = new URL(installerUrl);
+			if(!downloadURL(urlRef, installerFile)) {
+				System.err.println("Couldn't download installer URL: " + installerUrl);
+				return false;
+			}
+			installerFile.setExecutable(true);
+			String[] command = createCommand(installerFile, new String[0], os);
+			if(launch(command, installerFile.getParentFile()).waitFor() != 0)
+				return false;
 		}
-		catch(InterruptedException e){
+		catch(Exception e){
+			e.printStackTrace(System.err);
 			return false;
-		}
+		} 
 		return true;
 	}
 }
