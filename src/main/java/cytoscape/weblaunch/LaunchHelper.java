@@ -198,7 +198,9 @@ public class LaunchHelper {
 	private static String getExecutable(final String os) {
 		String exe; 
 		if (os.startsWith(WINDOWS))	
-			exe = "cytoscape.bat"; 
+			exe = "cytoscape.exe";
+		else if (os.startsWith(MAC))
+			exe = "Cytoscape.app/Contents/MacOS/JavaApplicationStub";
 		else 
 			exe = "cytoscape.sh";
 
@@ -263,13 +265,16 @@ public class LaunchHelper {
 	}
 	
 	private static boolean installCytoscape(final String os, final String arch) {
-		String installerUrl = "";
+		String installerUrl = null;
+		String volumePath = null;
 		if(os.startsWith(WINDOWS)) {
 			if(arch.contains("64")) 
 				installerUrl = win64InstallerUrl;
 			else
 				installerUrl = win32InstallerUrl;
 		}
+		else if(os.startsWith(MAC))
+			installerUrl = macInstallerUrl;
 		else
 			installerUrl = unixInstallerUrl;
 		String name = installerUrl.substring(installerUrl.lastIndexOf("/")+1);
@@ -283,7 +288,16 @@ public class LaunchHelper {
 				System.err.println("Couldn't download installer URL: " + installerUrl);
 				return false;
 			}
-			installerFile.setExecutable(true);
+			if(os.startsWith(MAC)) {
+				String[] command = {"/usr/bin/hdiutil", "attach", installerFile.getAbsolutePath()};
+				if(launch(command, installerFile.getParentFile()).waitFor() != 0)
+					return false;
+				int underscoreIndex = name.lastIndexOf("_");
+				volumePath = "/Volumes/" + name.substring(0, underscoreIndex+1);
+				installerFile = new File(volumePath, "Cytoscape Installer.app/Contents/MacOS/JavaApplicationStub");
+			}
+			else
+				installerFile.setExecutable(true);
 			String[] command = createCommand(installerFile, new String[0], os);
 			if(launch(command, installerFile.getParentFile()).waitFor() != 0)
 				return false;
@@ -291,7 +305,13 @@ public class LaunchHelper {
 		catch(Exception e){
 			e.printStackTrace(System.err);
 			return false;
-		} 
+		}
+		finally {
+			if(os.startsWith(MAC) && volumePath != null) {
+				String[] command = {"/usr/bin/hdiutil", "detach", volumePath};
+				launch(command, null);
+			}
+		}
 		return true;
 	}
 }
