@@ -50,6 +50,7 @@ public class LaunchHelper {
 		downloadApps();
 		String[] command = createCommand(file,args,os);
 		launch(command, file.getParentFile());
+		System.exit(0);
 	}
 
 	private static Process launch(final String[] command, final File path) {
