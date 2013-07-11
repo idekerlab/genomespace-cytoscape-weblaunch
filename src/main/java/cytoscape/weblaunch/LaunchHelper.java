@@ -203,7 +203,7 @@ public class LaunchHelper {
 		else if (os.startsWith(MAC))
 			exe = "Cytoscape.app/Contents/MacOS/JavaApplicationStub";
 		else 
-			exe = "cytoscape.sh";
+			exe = "Cytoscape";
 
 		return exe;
 	}
