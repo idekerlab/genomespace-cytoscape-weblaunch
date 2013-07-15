@@ -278,12 +278,9 @@ public class LaunchHelper {
 			installerUrl = macInstallerUrl;
 		else
 			installerUrl = unixInstallerUrl;
-		String name = installerUrl.substring(installerUrl.lastIndexOf("/")+1);
-		int dotIndex = name.lastIndexOf(".");
-		String prefix = name.substring(0, dotIndex);
-		String suffix = name.substring(dotIndex);
+		String fileName = installerUrl.substring(installerUrl.lastIndexOf("/")+1);
 		try {
-			File installerFile = File.createTempFile(prefix,suffix);
+			File installerFile = new File(System.getProperty("java.io.tmpdir"), fileName);
 			URL urlRef = new URL(installerUrl);
 			if(!downloadURL(urlRef, installerFile)) {
 				System.err.println("Couldn't download installer URL: " + installerUrl);
@@ -293,8 +290,8 @@ public class LaunchHelper {
 				String[] command = {"/usr/bin/hdiutil", "attach", installerFile.getAbsolutePath()};
 				if(launch(command, installerFile.getParentFile()).waitFor() != 0)
 					return false;
-				int underscoreIndex = name.lastIndexOf("_");
-				volumePath = "/Volumes/" + name.substring(0, underscoreIndex+1);
+				int underscoreIndex = fileName.lastIndexOf("_");
+				volumePath = "/Volumes/" + fileName.substring(0, underscoreIndex+1);
 				installerFile = new File(volumePath, "Cytoscape Installer.app/Contents/MacOS/JavaApplicationStub");
 			}
 			else
