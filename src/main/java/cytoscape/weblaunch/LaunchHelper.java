@@ -37,6 +37,7 @@ public class LaunchHelper {
 		}
 		catch(Exception e) {}
 		
+		String home = System.getProperty("user.home");
 		String os = System.getProperty("os.name").toLowerCase();
 		String arch = System.getProperty("os.arch");
 		String exe = getExecutable(os);
@@ -44,12 +45,20 @@ public class LaunchHelper {
 
 		if ( path == null )
 			return;
-
+		
+		File appDir = new File(home + File.separator + "CytoscapeConfiguration" + File.separator +
+				"3" + File.separator + "apps" + File.separator + "installed");
+		if(!appDir.exists())
+			appDir.mkdirs();
+		
+		if(!downloadApps(appDir))
+			return;
+		
 		// OK, all systems go!
 		File file = getFile(path,exe);
-		downloadApps();
 		String[] command = createCommand(file,args,os);
 		launch(command, file.getParentFile());
+		
 		System.exit(0);
 	}
 
@@ -146,43 +155,39 @@ public class LaunchHelper {
 		return command;
 	}
 
-	private static void downloadApps() {
-		String home = System.getProperty("user.home");
-		String path = home + File.separator + "CytoscapeConfiguration" + File.separator +
-				"3" + File.separator + "apps" + File.separator + "installed" + File.separator;
+	private static boolean downloadApps(File appDir) {
 		for (String appUrl : appUrls) { 
 			String name = appUrl.substring(appUrl.lastIndexOf("/")+1);
 			try {
 				URL urlRef = new URL(appUrl);
 				URLConnection uc = urlRef.openConnection();
-				File appFile = new File(path + name);
-				if(!appFile.exists() || (uc.getLastModified() > appFile.lastModified())) {
-					if(!downloadURL(urlRef, appFile))
-						System.err.println("Couldn't download plugin URL: " + urlRef);
-					}
-				}
+				File appFile = new File(appDir, name);
+				if(!appFile.exists() || (uc.getLastModified() > appFile.lastModified()))
+					downloadURL(urlRef, appFile);
+			}
 			catch(Exception e) {
-				e.printStackTrace(System.err);
+				JOptionPane.showMessageDialog(null,
+						"Couldn't download plugin: " + appUrl + 
+						"\n\nCaused by\n" + e.getMessage(),
+						"Error", JOptionPane.ERROR_MESSAGE);
+				return false;
 			}
 		}
+		return true;
 	}
 	
-	private static boolean downloadURL(final URL url, final File file) {
+	private static void downloadURL(final URL url, final File file) throws IOException {
 		FileOutputStream fos = null; 
 		try {
 			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
 			fos = new FileOutputStream(file);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 30);
 			fos.close();
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-			return false;
 		} finally {
 			if ( fos != null ) {
-				try { fos.close(); } catch (IOException ioe) { ioe.printStackTrace(System.err); }
+				fos.close();
 			}
 		}
-		return true;
 	}
 
 	private static boolean executableExists(final String path, final String exe) {
@@ -282,10 +287,7 @@ public class LaunchHelper {
 		try {
 			File installerFile = new File(System.getProperty("java.io.tmpdir"), fileName);
 			URL urlRef = new URL(installerUrl);
-			if(!downloadURL(urlRef, installerFile)) {
-				System.err.println("Couldn't download installer URL: " + installerUrl);
-				return false;
-			}
+			downloadURL(urlRef, installerFile);
 			if(os.startsWith(MAC)) {
 				String[] command = {"/usr/bin/hdiutil", "attach", installerFile.getAbsolutePath()};
 				if(launch(command, installerFile.getParentFile()).waitFor() != 0)
