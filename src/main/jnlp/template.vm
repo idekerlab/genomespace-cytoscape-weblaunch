@@ -10,7 +10,6 @@
     header("Content-Type: application/x-java-jnlp-file");
     $MAXHEAP=htmlspecialchars($_GET['maxHeapSize']);
     $NETWORK=htmlspecialchars($_GET['network']);
-    $SESSION=htmlspecialchars($_GET['session']);
     $GSENV=htmlspecialchars($_GET['gsenv']);
     $NODETABLE=htmlspecialchars($_GET['nodeTable']);
     $EDGETABLE=htmlspecialchars($_GET['edgeTable']);
@@ -42,27 +41,20 @@
   </resources>
   <application-desc main-class="$mainClass">
 <?php
-	# either load a session
-    if($SESSION != null && $SESSION != "") {
-        print("	<argument>-P</argument>\n");
-        print("	<argument>gs.session=$SESSION</argument>\n");
-
-	# or load network and/or attributes
-    } else {
-		if ($NETWORK != null && $NETWORK != "") {
-        	print("	<argument>-P</argument>\n");
-        	print("	<argument>gs.network=$NETWORK</argument>\n");
-		}
-		if ($NODETABLE != null && $NODETABLE != "") {
-        	print("	<argument>-P</argument>\n");
-        	print("	<argument>node.cytable=$NODETABLE</argument>\n");
+	if ($NETWORK != null && $NETWORK != "") {
+		print("	<argument>-p</argument>\n");
+    	print("	<argument>.</argument>\n");
+    	print("	<argument>-P</argument>\n");
+    	print("	<argument>gs.network=$NETWORK</argument>\n");
+    	if ($NODETABLE != null && $NODETABLE != "") {
+    		print("	<argument>-P</argument>\n");
+    		print("	<argument>node.cytable=$NODETABLE</argument>\n");
 		}
 		if ($EDGETABLE != null && $EDGETABLE != "") {
-        	print("	<argument>-P</argument>\n");
-        	print("	<argument>edge.cytable=$EDGETABLE</argument>\n");
+    		print("	<argument>-P</argument>\n");
+    		print("	<argument>edge.cytable=$EDGETABLE</argument>\n");
 		}
-    }
-
+	}
 	# set the genomespace environment
 	if ($GSENV != null && $GSENV != "") {
        	print("	<argument>-P</argument>\n");
