@@ -16,15 +16,15 @@ import javax.swing.UIManager;
 
 public class LaunchHelper {
 
-	private static String[] versions = new String[] {"Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
+	private static String[] versions = new String[] {"Cytoscape_v3.0.2","Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
 	private static String[] appUrls = new String[] { 
 			"http://chianti.ucsd.edu/~thully/plugins/GenomeSpace.jar" // GenomeSpace
 		};
 
-	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_64bit.exe";
-	private static String win32InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_windows_32bit.exe";
-	private static String unixInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_unix.sh";
-	private static String macInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.1/Cytoscape_3_0_1_macos.dmg";
+	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_windows_64bit.exe";
+	private static String win32InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_windows_32bit.exe";
+	private static String unixInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_unix.sh";
+	private static String macInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_macos.dmg";
 
 	private static final String MAC = "mac os x";
 	private static final String WINDOWS = "windows";
