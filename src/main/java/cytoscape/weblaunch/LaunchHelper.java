@@ -12,6 +12,7 @@ import java.util.Properties;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.ProgressMonitorInputStream;
 import javax.swing.UIManager;
 
 public class LaunchHelper {
@@ -179,7 +180,10 @@ public class LaunchHelper {
 	private static void downloadURL(final URL url, final File file) throws IOException {
 		FileOutputStream fos = null; 
 		try {
-			ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+			URLConnection uc = url.openConnection();
+			ProgressMonitorInputStream is = new ProgressMonitorInputStream(null, "Downloading " + file.getName() +"...", uc.getInputStream());
+			is.getProgressMonitor().setMaximum(uc.getContentLength());
+			ReadableByteChannel rbc = Channels.newChannel(is);
 			fos = new FileOutputStream(file);
 			fos.getChannel().transferFrom(rbc, 0, 1 << 30);
 			fos.close();
