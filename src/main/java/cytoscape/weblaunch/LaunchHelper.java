@@ -8,6 +8,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.swing.JFileChooser;
@@ -19,7 +22,7 @@ public class LaunchHelper {
 
 	private static String[] versions = new String[] {"Cytoscape_v3.0.2","Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
 	private static String[] appUrls = new String[] { 
-			"http://chianti.ucsd.edu/genomespace-cy3/GenomeSpace.jar" // GenomeSpace
+			"http://apps.cytoscape.org/download/genomespace/2.0.0" // GenomeSpace
 		};
 
 	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_windows_64bit.exe";
@@ -158,13 +161,34 @@ public class LaunchHelper {
 
 	private static boolean downloadApps(File appDir) {
 		for (String appUrl : appUrls) { 
-			String name = appUrl.substring(appUrl.lastIndexOf("/")+1);
 			try {
 				URL urlRef = new URL(appUrl);
 				URLConnection uc = urlRef.openConnection();
-				File appFile = new File(appDir, name);
-				if(!appFile.exists() || (uc.getLastModified() > appFile.lastModified()))
+				long lastModified = uc.getLastModified();
+
+				String path = uc.getURL().getPath();
+				String baseName = path.substring(path.lastIndexOf("/")+1);
+				String version = appUrl.substring(appUrl.lastIndexOf("/")+1);
+				String prefix = baseName.substring(0,baseName.lastIndexOf("."));
+				String suffix = baseName.substring(baseName.lastIndexOf(".")+1);
+				String name = prefix + "-v" + version + "." + suffix;
+				
+				boolean upToDate = false;
+				List<File> filesToDelete = new ArrayList<File>();
+				for(File file: appDir.listFiles()) {
+					if(!file.getName().startsWith(prefix)) continue;
+					if(lastModified > file.lastModified())
+						filesToDelete.add(file);
+					else
+						upToDate = true;
+				}
+				if(!upToDate) {
+					File appFile = File.createTempFile(prefix, suffix, appDir);
 					downloadURL(urlRef, appFile);
+					for(File file: filesToDelete)
+						file.delete();
+					appFile.renameTo(new File(appDir, name));
+				}
 			}
 			catch(Exception e) {
 				JOptionPane.showMessageDialog(null,
