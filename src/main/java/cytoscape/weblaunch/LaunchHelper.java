@@ -176,15 +176,16 @@ public class LaunchHelper {
 				boolean upToDate = false;
 				List<File> filesToDelete = new ArrayList<File>();
 				for(File file: appDir.listFiles()) {
-					if(!file.getName().startsWith(prefix)) continue;
-					if(lastModified > file.lastModified())
+					if(!file.getName().startsWith(prefix))
+						continue;
+					if(lastModified > file.lastModified() || !file.getName().endsWith(suffix))
 						filesToDelete.add(file);
 					else
 						upToDate = true;
 				}
 				if(!upToDate) {
 					File appFile = File.createTempFile(prefix, suffix, appDir);
-					downloadURL(urlRef, appFile);
+					if(!downloadURL(urlRef, appFile)) return false;
 					for(File file: filesToDelete)
 						file.delete();
 					appFile.renameTo(new File(appDir, name));
@@ -201,21 +202,27 @@ public class LaunchHelper {
 		return true;
 	}
 	
-	private static void downloadURL(final URL url, final File file) throws IOException {
+	private static boolean downloadURL(final URL url, final File file) throws IOException {
 		FileOutputStream fos = null; 
+		boolean finished = false;
 		try {
 			URLConnection uc = url.openConnection();
+			int size = uc.getContentLength();
 			ProgressMonitorInputStream is = new ProgressMonitorInputStream(null, "Downloading " + file.getName() +"...", uc.getInputStream());
-			is.getProgressMonitor().setMaximum(uc.getContentLength());
+			is.getProgressMonitor().setMaximum(size);
 			ReadableByteChannel rbc = Channels.newChannel(is);
 			fos = new FileOutputStream(file);
-			fos.getChannel().transferFrom(rbc, 0, 1 << 30);
-			fos.close();
-		} finally {
-			if ( fos != null ) {
+			finished = (fos.getChannel().transferFrom(rbc, 0, size) == size);
+		} 
+		finally {
+			if (fos != null) {
 				fos.close();
 			}
+			if (!finished) {
+				file.delete();
+			}
 		}
+		return finished;
 	}
 
 	private static boolean executableExists(final String path, final String exe) {
@@ -315,7 +322,7 @@ public class LaunchHelper {
 		try {
 			File installerFile = new File(System.getProperty("java.io.tmpdir"), fileName);
 			URL urlRef = new URL(installerUrl);
-			downloadURL(urlRef, installerFile);
+			if(!downloadURL(urlRef, installerFile)) return false;
 			if(os.startsWith(MAC)) {
 				String[] command = {"/usr/bin/hdiutil", "attach", installerFile.getAbsolutePath()};
 				if(launch(command, installerFile.getParentFile()).waitFor() != 0)
