@@ -178,7 +178,7 @@ public class LaunchHelper {
 				for(File file: appDir.listFiles()) {
 					if(!file.getName().startsWith(prefix))
 						continue;
-					if(lastModified > file.lastModified() || !file.getName().endsWith(suffix))
+					if(lastModified > file.lastModified() || !file.getName().endsWith("." + suffix))
 						filesToDelete.add(file);
 					else
 						upToDate = true;
