@@ -10,60 +10,64 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.ProgressMonitorInputStream;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class LaunchHelper {
 
-	private static String[] versions = new String[] {"Cytoscape_v3.0.2","Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
+	private static String[] versions = new String[] {"Cytoscape_v3.1.0","Cytoscape_v3.0.2","Cytoscape_v3.0.1","Cytoscape_v3.0.0"};
 	private static String[] appUrls = new String[] { 
 			"http://apps.cytoscape.org/download/genomespace/2.0.0" // GenomeSpace
 		};
 
-	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_windows_64bit.exe";
-	private static String win32InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_windows_32bit.exe";
-	private static String unixInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_unix.sh";
-	private static String macInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.0.2/Cytoscape_3_0_2_macos.dmg";
+	private static String win64InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.1.0/Cytoscape_3_1_0_windows_64bit.exe";
+	private static String win32InstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.1.0/Cytoscape_3_1_0_windows_32bit.exe";
+	private static String unixInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.1.0/Cytoscape_3_1_0_unix.sh";
+	private static String macInstallerUrl = "http://chianti.ucsd.edu/cytoscape-3.1.0/Cytoscape_3_1_0_macos.dmg";
 
 	private static final String MAC = "mac os x";
 	private static final String WINDOWS = "windows";
 	private static final String PREFERRED_PATH = "preferred.path";
 
-	public static void main(String[] args) {
-		try {
-		    UIManager.setLookAndFeel(
-		        UIManager.getSystemLookAndFeelClassName());
-		}
-		catch(Exception e) {}
-		
-		String home = System.getProperty("user.home");
-		String os = System.getProperty("os.name").toLowerCase();
-		String arch = System.getProperty("os.arch");
-		String exe = getExecutable(os);
-		String path = checkForCytoscapeInstallation(os, arch, exe); 
+	public static void main(final String[] args) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				try {
+				    UIManager.setLookAndFeel(
+				        UIManager.getSystemLookAndFeelClassName());
+				}
+				catch(Exception e) {}
+				
+				String home = System.getProperty("user.home");
+				String os = System.getProperty("os.name").toLowerCase();
+				String arch = System.getProperty("os.arch");
+				String exe = getExecutable(os);
+				String path = checkForCytoscapeInstallation(os, arch, exe); 
 
-		if ( path == null )
-			return;
-		
-		File appDir = new File(home + File.separator + "CytoscapeConfiguration" + File.separator +
-				"3" + File.separator + "apps" + File.separator + "installed");
-		if(!appDir.exists())
-			appDir.mkdirs();
-		
-		if(!downloadApps(appDir))
-			return;
-		
-		// OK, all systems go!
-		File file = getFile(path,exe);
-		String[] command = createCommand(file,args,os);
-		launch(command, file.getParentFile());
-		
-		System.exit(0);
+				if ( path == null )
+					System.exit(0);
+				
+				File appDir = new File(home + File.separator + "CytoscapeConfiguration" + File.separator +
+						"3" + File.separator + "apps" + File.separator + "installed");
+				if(!appDir.exists())
+					appDir.mkdirs();
+				
+				if(!downloadApps(appDir))
+					System.exit(0);
+				
+				// OK, all systems go!
+				File file = getFile(path,exe);
+				String[] command = createCommand(file,args,os);
+				launch(command, file.getParentFile());
+				
+				System.exit(0);
+			}
+		});
 	}
 
 	private static Process launch(final String[] command, final File path) {
@@ -297,7 +301,7 @@ public class LaunchHelper {
 		JFileChooser fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		fc.setDialogTitle("Select Cytoscape Installation Directory");
-
+		
 		int returnVal = fc.showOpenDialog(null);
 		if (returnVal == JFileChooser.APPROVE_OPTION) 
 			return fc.getSelectedFile();
