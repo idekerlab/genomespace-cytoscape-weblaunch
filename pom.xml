@@ -5,7 +5,7 @@
 	<groupId>cytoscape</groupId>
 	<artifactId>genomespace-cytoscape-weblaunch</artifactId>
 	<name>GenomeSpace Cytoscape Weblaunch</name>
-	<version>2.0.2</version>
+	<version>2.0.3</version>
 
 	<!-- This is the url used to define the codebase of the jnlp file. -->
 	<url>${webstart.url}</url>
@@ -77,9 +77,11 @@
 						keytool -genkey -alias cytoscape -keypass secret enter "secret" for the password. 
 						The actual keystore file created is assumed to be in: ${user.home}/.keystore -->
 					<sign>
-						<keypass>secret</keypass>
-						<storepass>secret</storepass>
-						<alias>cytoscape</alias>
+						<keystore>NONE</keystore>
+						<storetype>KeychainStore</storetype>
+						<storepass>cytoscape</storepass>
+						<keypass>cytoscape</keypass>
+						<alias>THE  CYTOSCAPE CONSORTIUM</alias>
 						<verify>true</verify>
 					</sign>
 					<verbose>true</verbose>

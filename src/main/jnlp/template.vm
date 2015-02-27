@@ -40,8 +40,6 @@
   <application-desc main-class="$mainClass">
 <?php
 	if ($URL != null && $URL != "") {
-		print("	<argument>-p</argument>\n");
-    	print("	<argument>.</argument>\n");
     	print("	<argument>-P</argument>\n");
     	print("	<argument>gs.url=$URL</argument>\n");
 	}
