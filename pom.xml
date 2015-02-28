@@ -73,9 +73,8 @@
 						<outputFile>cytoscape.php</outputFile>
 						<mainClass>cytoscape.weblaunch.LaunchHelper</mainClass>
 					</jnlp>
-					<!-- If this is your first time using Webstart you must create a keystore: 
-						keytool -genkey -alias cytoscape -keypass secret enter "secret" for the password. 
-						The actual keystore file created is assumed to be in: ${user.home}/.keystore -->
+					<!-- The following configuration is building for Mac OS X systems with the Cytoscape certificate
+					on the Keychain. You will need to change storetype and keystore if using a .p12 file for the keystore. -->
 					<sign>
 						<keystore>NONE</keystore>
 						<storetype>KeychainStore</storetype>
