@@ -54,7 +54,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>webstart-maven-plugin</artifactId>
-				<version>1.0-beta-3</version>
+				<version>1.0-beta-6</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -73,14 +73,14 @@
 						<outputFile>cytoscape.php</outputFile>
 						<mainClass>cytoscape.weblaunch.LaunchHelper</mainClass>
 					</jnlp>
-					<!-- The following configuration is building for Mac OS X systems with the Cytoscape certificate
-					on the Keychain. You will need to change storetype and keystore if using a .p12 file for the keystore. -->
+					<!-- Make sure to copy the PKCS12 keystore file to .keystore before building -->
 					<sign>
-						<keystore>NONE</keystore>
-						<storetype>KeychainStore</storetype>
+						<keystore>${user.home}/.keystore</keystore>
+						<storetype>pkcs12</storetype>
 						<storepass>cytoscape</storepass>
 						<keypass>cytoscape</keypass>
-						<alias>THE  CYTOSCAPE CONSORTIUM</alias>
+						<alias>secure.ksoftware.net</alias>
+						<tsaLocation>http://timestamp.comodoca.com/rfc3161</tsaLocation>
 						<verify>true</verify>
 					</sign>
 					<verbose>true</verbose>
