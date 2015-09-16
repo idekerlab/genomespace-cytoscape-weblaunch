@@ -331,8 +331,7 @@ public class LaunchHelper {
 				String[] command = {"/usr/bin/hdiutil", "attach", installerFile.getAbsolutePath()};
 				if(launch(command, installerFile.getParentFile()).waitFor() != 0)
 					return false;
-				int underscoreIndex = fileName.lastIndexOf("_");
-				volumePath = "/Volumes/" + fileName.substring(0, underscoreIndex+1);
+				volumePath = "/Volumes/Cytoscape";
 				installerFile = new File(volumePath, "Cytoscape Installer.app/Contents/MacOS/JavaApplicationStub");
 			}
 			else
